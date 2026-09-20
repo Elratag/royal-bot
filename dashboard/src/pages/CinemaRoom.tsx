@@ -50,8 +50,8 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
   const [watchersCount, setWatchersCount] = useState(1);
   const [channelId, setChannelId] = useState('default');
   const [guildId, setGuildId] = useState('');
-  const [userId, setUserId] = useState('');
-  const [activeServer, setActiveServer] = useState<'server1' | 'server2' | 'server3' | 'server4' | 'server5'>('server1');
+  const [activeServer, setActiveServer] = useState<'server1' | 'server2' | 'server3' | 'server4' | 'server5' | 'server6'>('server1');
+  const [adShieldEnabled, setAdShieldEnabled] = useState<boolean>(true);
   const [subtitlesList, setSubtitlesList] = useState<any[]>([]);
   const [isLoadingSubs, setIsLoadingSubs] = useState<boolean>(false);
 
@@ -119,30 +119,39 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
   };
 
   // Helper to generate correct streaming URL per server with Arabic subtitle hints
-  const buildServerStreamUrl = (movie: CinemaMovie, server: 'server1' | 'server2' | 'server3' | 'server4' | 'server5'): string => {
+  const buildServerStreamUrl = (movie: CinemaMovie, server: 'server1' | 'server2' | 'server3' | 'server4' | 'server5' | 'server6'): string => {
     const id = getImdbId(movie);
     const isSeries = movie.type === 'series' || !!movie.season;
     const s = movie.season || 1;
     const e = movie.episode || 1;
 
+    // If direct uploaded or custom stream url is present and not a generic embed
+    if (movie.streamUrl && !movie.streamUrl.includes('vidsrc') && !movie.streamUrl.includes('multiembed') && !movie.streamUrl.includes('autoembed') && !movie.streamUrl.includes('vidlink') && !movie.streamUrl.includes('2embed') && !movie.streamUrl.includes('smashystream')) {
+      return movie.streamUrl;
+    }
+
     switch (server) {
-      case 'server1': // VidSrc Pro (سيرفر VIP - سريع ونظيف ومترجم تلقائياً)
+      case 'server1': // VidLink VIP (خالي من الإعلانات تماماً مع ترجمة عربية تلقائية)
         return isSeries
-          ? `https://vidsrc.pm/embed/tv?imdb=${id}&season=${s}&episode=${e}&ds_lang=ar&sub=ar`
-          : `https://vidsrc.pm/embed/movie/${id}?ds_lang=ar&sub=ar`;
-      case 'server2': // MultiEmbed (سيرفر 2 - ترجمة عربية مدمجة)
+          ? `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=c5a059&secondaryColor=121217&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=c5a059&secondaryColor=121217&autoplay=true`;
+      case 'server2': // AutoEmbed Pro (سيرفر نقي متعدد الجودات)
+        return isSeries 
+          ? `https://player.autoembed.co/embed/tv/${id}/${s}/${e}`
+          : `https://player.autoembed.co/embed/movie/${id}`;
+      case 'server3': // VidSrc CC (سيرفر فائق السرعة)
+        return isSeries
+          ? `https://vidsrc.cc/v2/embed/tv/${id}/${s}/${e}?autoPlay=true`
+          : `https://vidsrc.cc/v2/embed/movie/${id}?autoPlay=true`;
+      case 'server4': // 2Embed Global (شبكة سيرفرات عالمية سريعة)
+        return isSeries
+          ? `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`
+          : `https://www.2embed.cc/embed/${id}`;
+      case 'server5': // MultiEmbed (سيرفر متعدد اللغات والترجمة)
         return isSeries 
           ? `https://multiembed.mov/?video_id=${id}&s=${s}&e=${e}&sub_lang=Arabic`
           : `https://multiembed.mov/?video_id=${id}&sub_lang=Arabic`;
-      case 'server3': // VidSrc Me (سيرفر 3 - سيرفر خفيف وسريع)
-        return isSeries
-          ? `https://vidsrc.me/embed/tv?imdb=${id}&season=${s}&episode=${e}&ds_lang=ar`
-          : `https://vidsrc.me/embed/movie?imdb=${id}&ds_lang=ar`;
-      case 'server4': // AutoEmbed (سيرفر 4 - متعدد الجودات)
-        return isSeries
-          ? `https://player.autoembed.co/embed/tv/${id}/${s}/${e}`
-          : `https://player.autoembed.co/embed/movie/${id}`;
-      case 'server5': // SmashyStream (سيرفر 5 - بديل فوري)
+      case 'server6': // SmashyStream (بديل احتياطي فوري)
         return isSeries
           ? `https://embed.smashystream.com/playere.php?imdb=${id}&season=${s}&episode=${e}`
           : `https://embed.smashystream.com/playere.php?imdb=${id}`;
@@ -491,40 +500,48 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
                   className={activeServer === 'server1' ? 'btn-gold' : 'btn-secondary'}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
-                  ⚡ سيرفر 1 (VidSrc Pro - مترجم)
+                  ⚡ سيرفر 1 (VidLink VIP - بدون إعلانات)
                 </button>
                 <button 
                   onClick={() => handleSwitchServer('server2')}
                   className={activeServer === 'server2' ? 'btn-gold' : 'btn-secondary'}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
-                  🍿 سيرفر 2 (MultiEmbed)
+                  🍿 سيرفر 2 (AutoEmbed Pro)
                 </button>
                 <button 
                   onClick={() => handleSwitchServer('server3')}
                   className={activeServer === 'server3' ? 'btn-gold' : 'btn-secondary'}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
-                  📺 سيرفر 3 (VidSrc Me)
+                  🎬 سيرفر 3 (VidSrc CC VIP)
                 </button>
                 <button 
                   onClick={() => handleSwitchServer('server4')}
                   className={activeServer === 'server4' ? 'btn-gold' : 'btn-secondary'}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
-                  🎬 سيرفر 4 (AutoEmbed)
+                  🌐 سيرفر 4 (2Embed Global)
                 </button>
                 <button 
                   onClick={() => handleSwitchServer('server5')}
                   className={activeServer === 'server5' ? 'btn-gold' : 'btn-secondary'}
                   style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                 >
-                  🌐 سيرفر 5 (Smashy)
+                  📺 سيرفر 5 (MultiEmbed)
+                </button>
+                <button 
+                  onClick={() => handleSwitchServer('server6')}
+                  className={activeServer === 'server6' ? 'btn-gold' : 'btn-secondary'}
+                  style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                >
+                  ⚡ سيرفر 6 (Smashy)
                 </button>
 
                 <div style={{ width: '1px', height: '24px', background: 'var(--border-subtle)', margin: '0 4px' }} />
 
                 <div
+                  onClick={() => setAdShieldEnabled(!adShieldEnabled)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -532,14 +549,16 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
                     padding: '6px 14px',
                     borderRadius: '20px',
                     fontSize: '0.8rem',
-                    background: 'rgba(16, 185, 129, 0.12)',
-                    border: '1px solid rgba(16, 185, 129, 0.3)',
-                    color: '#34D399',
+                    background: adShieldEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    border: adShieldEnabled ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)',
+                    color: adShieldEnabled ? '#34D399' : '#F87171',
+                    cursor: 'pointer',
+                    userSelect: 'none',
                   }}
-                  title="حماية العرض السينمائي المباشر نشطة"
+                  title="انقر لتشغيل أو إيقاف درع حظر الإعلانات والنوافذ المنبثقة"
                 >
                   <ShieldCheck size={15} />
-                  <span>🛡️ حماية العرض نشطة</span>
+                  <span>{adShieldEnabled ? '🛡️ درع منع الإعلانات نشط' : '⚠️ درع الإعلانات معطل'}</span>
                 </div>
               </div>
             </div>
@@ -627,8 +646,8 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
             {currentMovie ? (
               isEmbed ? (
                 <iframe
-                  key={currentMovie.streamUrl}
-                  src={currentMovie.streamUrl}
+                  key={`${currentMovie.streamUrl}-${activeServer}`}
+                  src={buildServerStreamUrl(currentMovie, activeServer)}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -637,6 +656,7 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
                   }}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
+                  sandbox={adShieldEnabled ? "allow-scripts allow-same-origin allow-forms allow-presentation" : undefined}
                 />
               ) : (
                 <video
