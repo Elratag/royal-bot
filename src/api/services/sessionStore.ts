@@ -1,45 +1,31 @@
-import fs from 'fs';
-import path from 'path';
 import { UserGuild } from '../../types/index.js';
-
-const SESSIONS_FILE = path.join(process.cwd(), 'dev_sessions.json');
+import { prisma } from '../../database/index.js';
 
 class SessionStore {
   private guildsCache = new Map<string, { guilds: UserGuild[]; timestamp: number }>();
 
-  constructor() {
-    this.loadFromDisk();
-  }
-
-  private loadFromDisk() {
+  async loadFromDatabase() {
     try {
-      if (fs.existsSync(SESSIONS_FILE)) {
-        const raw = fs.readFileSync(SESSIONS_FILE, 'utf-8');
-        const data = JSON.parse(raw);
-        for (const [userId, item] of Object.entries(data)) {
-          this.guildsCache.set(userId, item as any);
-        }
+      const sessions = await prisma.userSession.findMany();
+      for (const s of sessions) {
+        try {
+          const parsed = JSON.parse(s.guilds);
+          this.guildsCache.set(s.userId, { guilds: parsed, timestamp: s.updatedAt.getTime() });
+        } catch {}
       }
-    } catch (err) {
-      console.error('Failed to load sessions from disk:', err);
-    }
-  }
-
-  private saveToDisk() {
-    try {
-      const obj: Record<string, any> = {};
-      for (const [k, v] of this.guildsCache.entries()) {
-        obj[k] = v;
-      }
-      fs.writeFileSync(SESSIONS_FILE, JSON.stringify(obj, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Failed to save sessions to disk:', err);
+      console.log(`💎 [Sessions] Loaded ${sessions.length} persistent user session(s) from PostgreSQL database.`);
+    } catch (err: any) {
+      console.warn('⚠️ [Sessions] Could not preload sessions from database:', err.message);
     }
   }
 
   setGuilds(userId: string, guilds: UserGuild[]) {
     this.guildsCache.set(userId, { guilds, timestamp: Date.now() });
-    this.saveToDisk();
+    prisma.userSession.upsert({
+      where: { userId },
+      update: { guilds: JSON.stringify(guilds) },
+      create: { userId, guilds: JSON.stringify(guilds) }
+    }).catch(err => console.error('Failed to persist session to database:', err.message));
   }
 
   getGuilds(userId: string): UserGuild[] {

@@ -3,6 +3,7 @@ import { initDatabase } from './database/index.js';
 import { startDiscordBot } from './bot/index.js';
 import { createApiServer } from './api/server.js';
 import { config } from './config/index.js';
+import { sessionStore } from './api/services/sessionStore.js';
 
 async function bootstrap() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -11,6 +12,7 @@ async function bootstrap() {
 
   // 1. Initialize Database
   await initDatabase();
+  await sessionStore.loadFromDatabase();
 
   // 2. Start Discord Bot Service
   await startDiscordBot();
