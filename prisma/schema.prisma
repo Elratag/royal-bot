@@ -1,0 +1,165 @@
+// Prisma schema for Royal Discord Bot & Dashboard Suite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Guild {
+  id        String   @id
+  name      String
+  icon      String?
+  ownerId   String
+  joinedAt  DateTime @default(now())
+  isActive  Boolean  @default(true)
+}
+
+model WelcomeConfig {
+  guildId      String   @id
+  enabled      Boolean  @default(false)
+  channelId    String?
+  message      String   @default("Welcome to {server}, {user}! Enjoy your stay.")
+  embedEnabled Boolean  @default(true)
+  embedTitle   String   @default("👑 New Royal Member")
+  embedColor   String   @default("#C5A059")
+}
+
+model AutoRole {
+  id        Int      @id @default(autoincrement())
+  guildId   String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  @@index([guildId])
+}
+
+model ColorPanel {
+  id          String        @id @default(uuid())
+  guildId     String
+  channelId   String
+  messageId   String?
+  title       String        @default("👑 Royal Color Palette")
+  description String?       @default("Click a button to select your VIP name color!")
+  singleColor Boolean       @default(true)
+  options     ColorOption[]
+
+  @@index([guildId])
+}
+
+model ColorOption {
+  id       Int        @id @default(autoincrement())
+  panelId  String
+  roleId   String
+  name     String
+  emoji    String?
+  panel    ColorPanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@index([panelId])
+}
+
+model LogConfig {
+  guildId            String  @id
+  memberLogChannel   String?
+  kickLogChannel     String?
+  banLogChannel      String?
+  voiceLogChannel    String?
+  muteLogChannel     String?
+  messageLogChannel  String?
+  ticketLogChannel   String?
+}
+
+model TicketPanel {
+  id             String   @id @default(uuid())
+  guildId        String
+  channelId      String
+  messageId      String?
+  categoryId     String?
+  title          String   @default("🎟️ Royal Support Tickets")
+  description    String?  @default("Click below to open a private ticket with our team.")
+  supportRoleId  String?
+  logsChannelId  String?
+  welcomeMessage String?  @default("Thank you for opening a ticket! Staff will assist you shortly.")
+  tickets        Ticket[]
+
+  @@index([guildId])
+}
+
+model Ticket {
+  id            Int          @id @default(autoincrement())
+  guildId       String
+  panelId       String?
+  channelId     String       @unique
+  creatorId     String
+  status        String       @default("OPEN") // OPEN, CLAIMED, CLOSED
+  claimedBy     String?
+  transcriptUrl String?
+  createdAt     DateTime     @default(now())
+  closedAt      DateTime?
+  panel         TicketPanel? @relation(fields: [panelId], references: [id], onDelete: SetNull)
+
+  @@index([guildId])
+  @@index([creatorId])
+}
+
+model AutoResponse {
+  id         Int      @id @default(autoincrement())
+  guildId    String
+  trigger    String
+  response   String
+  exactMatch Boolean  @default(false)
+  channelId  String?
+  enabled    Boolean  @default(true)
+
+  @@index([guildId])
+}
+
+model CommandSetting {
+  id              Int     @id @default(autoincrement())
+  guildId         String
+  commandName     String
+  enabled         Boolean @default(true)
+  allowedRoles    String? // comma-separated role IDs
+  allowedChannels String? // comma-separated channel IDs
+
+  @@unique([guildId, commandName])
+  @@index([guildId])
+}
+
+model BotSetting {
+  guildId     String   @id
+  statusText  String   @default("👑 Royal Service | /help")
+  statusType  String   @default("WATCHING") // PLAYING, STREAMING, LISTENING, WATCHING, COMPETING
+  onlineStatus String  @default("online") // online, idle, dnd, invisible
+  musicVolume Int      @default(80)
+  language    String   @default("ar")
+}
+
+model MovieItem {
+  id                  Int     @id @default(autoincrement())
+  title               String
+  type                String  @default("movie") // movie, series
+  season              Int?
+  episode             Int?
+  duration            String?
+  quality             String  @default("1080p")
+  language            String  @default("Arabic")
+  subtitles           String  @default("Arabic, English")
+  posterUrl           String?
+  streamUrl           String
+  isLegalPublicDomain Boolean @default(true)
+}
+
+model DashboardAuditLog {
+  id        Int      @id @default(autoincrement())
+  guildId   String
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([guildId])
+}

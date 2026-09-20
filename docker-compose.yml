@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  royal-suite:
+    build: .
+    container_name: royal_discord_suite
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DISCORD_CLIENT_ID=${DISCORD_CLIENT_ID}
+      - DISCORD_CLIENT_SECRET=${DISCORD_CLIENT_SECRET}
+      - DISCORD_REDIRECT_URI=${DISCORD_REDIRECT_URI}
+      - DASHBOARD_URL=${DASHBOARD_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgresql://royal_user:royal_password@postgres:5432/royal_bot_db?schema=public
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: royal_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: royal_user
+      POSTGRES_PASSWORD: royal_password
+      POSTGRES_DB: royal_bot_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    container_name: royal_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:
