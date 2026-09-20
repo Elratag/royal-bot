@@ -55,6 +55,7 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'هجوم العمالقة': { title: 'Attack on Titan', type: 'series' },
   'قاتل الشياطين': { title: 'Demon Slayer: Kimetsu no Yaiba', type: 'series' },
   'ديمون سلاير': { title: 'Demon Slayer: Kimetsu no Yaiba', type: 'series' },
+  'كيميتسو': { title: 'Demon Slayer: Kimetsu no Yaiba', type: 'series' },
   'جوجوتسو كايسن': { title: 'Jujutsu Kaisen', type: 'series' },
   'جوجيتسو': { title: 'Jujutsu Kaisen', type: 'series' },
   'ناروتو': { title: 'Naruto', type: 'series' },
@@ -67,23 +68,57 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'هنتر اكس هنتر': { title: 'Hunter x Hunter', type: 'series' },
   'القناص': { title: 'Hunter x Hunter', type: 'series' },
   'دراغون بول': { title: 'Dragon Ball Z', type: 'series' },
+  'دراغون بول سوبر': { title: 'Dragon Ball Super', type: 'series' },
   'سولو ليفلينج': { title: 'Solo Leveling', type: 'series' },
   'طوكيو غول': { title: 'Tokyo Ghoul', type: 'series' },
+  'فينلاند ساجا': { title: 'Vinland Saga', type: 'series' },
+  'طوكيو ريفينجرز': { title: 'Tokyo Revengers', type: 'series' },
+  'بلاك كلوفر': { title: 'Black Clover', type: 'series' },
+  'تشينسو مان': { title: 'Chainsaw Man', type: 'series' },
+  'رجل المنشار': { title: 'Chainsaw Man', type: 'series' },
+  'بلو لوك': { title: 'Blue Lock', type: 'series' },
+  'هايكيو': { title: 'Haikyuu!!', type: 'series' },
+  'شتاينز جيت': { title: 'Steins;Gate', type: 'series' },
+  'كود جياس': { title: 'Code Geass', type: 'series' },
+  'الخيميائي الفولاذي': { title: 'Fullmetal Alchemist: Brotherhood', type: 'series' },
+  'ون بنش مان': { title: 'One Punch Man', type: 'series' },
+  'سايتاما': { title: 'One Punch Man', type: 'series' },
+  'موب سايكو': { title: 'Mob Psycho 100', type: 'series' },
+  'سورد ارت اونلاين': { title: 'Sword Art Online', type: 'series' },
+  'فيري تيل': { title: 'Fairy Tail', type: 'series' },
   
   // Turkish Series (مسلسلات تركية)
   'المؤسس عثمان': { title: 'Establishment: Osman', type: 'series' },
   'عثمان': { title: 'Establishment: Osman', type: 'series' },
+  'قيامة عثمان': { title: 'Establishment: Osman', type: 'series' },
   'قيامة ارطغرل': { title: 'Dirilis: Ertugrul', type: 'series' },
   'ارطغرل': { title: 'Dirilis: Ertugrul', type: 'series' },
   'الحفرة': { title: 'Cukur', type: 'series' },
   'طائر الرفراف': { title: 'Yali Capkini', type: 'series' },
   'وادي الذئاب': { title: 'Valley of the Wolves', type: 'series' },
   'صلاح الدين الايوبي': { title: 'Kudus Fatihi Selahaddin Eyyubi', type: 'series' },
+  'الب ارسلان': { title: 'Alparslan: Buyuk Selcuklu', type: 'series' },
+  'المنظمة': { title: 'Teskilat', type: 'series' },
   'حكايتنا': { title: 'Bizim Hikaye', type: 'series' },
   'القضاء': { title: 'Yargi', type: 'series' },
+  'انت اطرق بابي': { title: 'Sen Cal Kapimi', type: 'series' },
+  'حب اعمى': { title: 'Kara Sevda', type: 'series' },
+  'العشق الممنوع': { title: 'Ask-i Memnu', type: 'series' },
+  'رامو': { title: 'Ramo', type: 'series' },
+
+  // Korean & Asian Dramas (مسلسلات كورية وآسيوية)
+  'لعبة الحبار': { title: 'Squid Game', type: 'series' },
+  'كلنا موتى': { title: 'All of Us Are Dead', type: 'series' },
+  'اليس في بلاد العجائب': { title: 'Alice in Borderland', type: 'series' },
+  'فينتشنزو': { title: 'Vincenzo', type: 'series' },
+  'مجد الانتقام': { title: 'The Glory', type: 'series' },
+  'المجد': { title: 'The Glory', type: 'series' },
+  'هبوط اضطراري للحب': { title: 'Crash Landing on You', type: 'series' },
+  'السعادة': { title: 'Happiness', type: 'series' },
 
   // Global Series (مسلسلات عالمية)
   'صراع العروش': { title: 'Game of Thrones', type: 'series' },
+  'قيم اوف ثرونز': { title: 'Game of Thrones', type: 'series' },
   'بيت التنين': { title: 'House of the Dragon', type: 'series' },
   'ال التنين': { title: 'House of the Dragon', type: 'series' },
   'بريكنج باد': { title: 'Breaking Bad', type: 'series' },
@@ -94,7 +129,6 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'فايكنج': { title: 'Vikings', type: 'series' },
   'ذا بويز': { title: 'The Boys', type: 'series' },
   'الرفاق': { title: 'The Boys', type: 'series' },
-  'لعبة الحبار': { title: 'Squid Game', type: 'series' },
   'دارك': { title: 'Dark', type: 'series' },
   'لا كاسا دي بابيل': { title: 'Money Heist', type: 'series' },
   'البروفيسور': { title: 'Money Heist', type: 'series' },
@@ -106,6 +140,13 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'الموتى السائرون': { title: 'The Walking Dead', type: 'series' },
   'شيرلوك': { title: 'Sherlock', type: 'series' },
   'لوكي': { title: 'Loki', type: 'series' },
+  'سكسشن': { title: 'Succession', type: 'series' },
+  'الخلافة': { title: 'Succession', type: 'series' },
+  'ديكستر': { title: 'Dexter', type: 'series' },
+  'بريزون بريك': { title: 'Prison Break', type: 'series' },
+  'الهروب من السجن': { title: 'Prison Break', type: 'series' },
+  'بلاك ميرور': { title: 'Black Mirror', type: 'series' },
+  'المراة السوداء': { title: 'Black Mirror', type: 'series' },
 
   // Arabic & Egyptian Movies & Series (أفلام ومسلسلات عربية ومصرية)
   'الفيل الازرق': { title: 'The Blue Elephant', type: 'movie' },
@@ -124,6 +165,12 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'ملوك الجدعنة': { title: 'Molook El Gadana', type: 'series' },
   'الهيبة': { title: 'Al Hayba', type: 'series' },
   'الحشاشين': { title: 'The Assassins', type: 'series' },
+  'سفاح الجيزة': { title: 'Safah El Giza', type: 'series' },
+  'الكبير اوي': { title: 'El Kabeer Awi', type: 'series' },
+  'موضوع عائلي': { title: 'Mawdoo Aeli', type: 'series' },
+  'العتاولة': { title: 'Al Atawla', type: 'series' },
+  'نعمة الافوكاتو': { title: 'Nema El Avocato', type: 'series' },
+  'حق عرب': { title: 'Haq Arab', type: 'series' },
 
   // Hollywood Movies (أفلام هوليوود)
   'اوبنهايمر': { title: 'Oppenheimer', type: 'movie' },
@@ -136,6 +183,7 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'باتمان': { title: 'The Batman', type: 'movie' },
   'الجوكر': { title: 'Joker', type: 'movie' },
   'سبايدرمان': { title: 'Spider-Man', type: 'movie' },
+  'الرجل العنكبوت': { title: 'Spider-Man', type: 'movie' },
   'تايتانيك': { title: 'Titanic', type: 'movie' },
   'جلادياتور': { title: 'Gladiator', type: 'movie' },
   'المحارب': { title: 'Gladiator', type: 'movie' },
@@ -145,6 +193,19 @@ const POPULAR_ARABIC_MAP: Record<string, { title: string; type?: 'movie' | 'seri
   'ديدبول': { title: 'Deadpool', type: 'movie' },
   'المصفوفة': { title: 'The Matrix', type: 'movie' },
   'ماتريكس': { title: 'The Matrix', type: 'movie' },
+  'افنجرز': { title: 'The Avengers', type: 'movie' },
+  'المنتقمون': { title: 'The Avengers', type: 'movie' },
+  'ايرون مان': { title: 'Iron Man', type: 'movie' },
+  'الرجل الحديدي': { title: 'Iron Man', type: 'movie' },
+  'فاست اند فيوريوس': { title: 'Fast & Furious', type: 'movie' },
+  'السرعة والغضب': { title: 'Fast & Furious', type: 'movie' },
+  'مهمة مستحيلة': { title: 'Mission: Impossible', type: 'movie' },
+  'ميشن امبوسيبل': { title: 'Mission: Impossible', type: 'movie' },
+  'توب غان': { title: 'Top Gun: Maverick', type: 'movie' },
+  'دون': { title: 'Dune', type: 'movie' },
+  'كثيب': { title: 'Dune', type: 'movie' },
+  'كوكب القردة': { title: 'Kingdom of the Planet of the Apes', type: 'movie' },
+  'قراصنة الكاريبي': { title: 'Pirates of the Caribbean: The Curse of the Black Pearl', type: 'movie' },
 };
 
 export class CinemaManager {
@@ -625,53 +686,110 @@ export class CinemaManager {
     const cleanQ = query.trim();
 
     const results: MovieMetadata[] = [];
+    const seenImdbIds = new Set<string>();
 
-    // Search local DB
-    const dbItems = await prisma.movieItem.findMany({
-      where: {
-        title: { contains: cleanQ },
-        type: type ? String(type) : undefined,
-      },
-      take: 6,
-    });
-
-    for (const item of dbItems) {
-      results.push({
-        id: item.id,
-        title: item.title,
-        type: item.type as 'movie' | 'series',
-        quality: item.quality,
-        language: item.language,
-        subtitles: item.subtitles,
-        posterUrl: item.posterUrl || DEFAULT_MOVIE.posterUrl,
-        streamUrl: item.streamUrl,
-        season: item.season || undefined,
-        episode: item.episode || undefined,
-        duration: item.duration || undefined,
+    // 1. Search local DB first
+    try {
+      const dbItems = await prisma.movieItem.findMany({
+        where: {
+          title: { contains: cleanQ },
+          type: type ? String(type) : undefined,
+        },
+        take: 6,
       });
+
+      for (const item of dbItems) {
+        results.push({
+          id: item.id,
+          title: item.title,
+          type: item.type as 'movie' | 'series',
+          quality: item.quality,
+          language: item.language,
+          subtitles: item.subtitles,
+          posterUrl: item.posterUrl || DEFAULT_MOVIE.posterUrl,
+          streamUrl: item.streamUrl,
+          season: item.season || undefined,
+          episode: item.episode || undefined,
+          duration: item.duration || undefined,
+        });
+      }
+    } catch {}
+
+    // 2. Resolve English Title for Cinemeta if query is in Arabic
+    const normalizedQuery = cleanQ.toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '')
+      .trim();
+
+    const hasArabic = /[\u0600-\u06FF]/.test(cleanQ);
+    let resolvedEnglishTerm: string | null = null;
+    let matchedMappedType: 'movie' | 'series' | null = null;
+
+    for (const [arKey, mapped] of Object.entries(POPULAR_ARABIC_MAP)) {
+      const normKey = arKey.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').trim();
+      if (normalizedQuery.includes(normKey) || normKey.includes(normalizedQuery)) {
+        resolvedEnglishTerm = mapped.title;
+        if (mapped.type) matchedMappedType = mapped.type;
+        break;
+      }
     }
 
-    // Search Cinemeta
-    try {
-      const searchTypes = type === 'series' ? ['series'] : type === 'movie' ? ['movie'] : ['movie', 'series'];
-      for (const t of searchTypes) {
-        const res = await axios.get(`https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(cleanQ)}.json`, { timeout: 3500 }).catch(() => ({ data: { metas: [] } }));
-        for (const meta of (res.data?.metas || []).slice(0, 4)) {
-          results.push({
-            imdbId: meta.id,
-            title: meta.name,
-            type: t as 'movie' | 'series',
-            quality: '1080p Full HD',
-            language: 'Multi-Audio (Arabic Subs)',
-            subtitles: 'Arabic, English',
-            duration: meta.releaseInfo || (t === 'series' ? 'Series' : 'Movie'),
-            posterUrl: meta.poster || DEFAULT_MOVIE.posterUrl,
-            streamUrl: t === 'series'
-              ? `https://vidlink.pro/tv/${meta.id}/1/1?primaryColor=c5a059&autoplay=true`
-              : `https://vidlink.pro/movie/${meta.id}?primaryColor=c5a059&autoplay=true`,
-            overview: meta.description || '',
-          });
+    if (!resolvedEnglishTerm && hasArabic) {
+      try {
+        const trans = await axios.get(
+          `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanQ)}&langpair=ar|en`,
+          { timeout: 3000 }
+        );
+        const tText = trans.data?.responseData?.translatedText?.replace(/[."'"]/g, '').trim();
+        if (tText && tText.length > 1 && !tText.toLowerCase().includes('theme music')) {
+          resolvedEnglishTerm = tText;
         }
+      } catch {}
+    }
+
+    // 3. Search Cinemeta with resolved terms (NEVER pass raw Arabic to Cinemeta as it strips non-ascii characters)
+    try {
+      const cinemetaTerms: string[] = [];
+      if (resolvedEnglishTerm) {
+        cinemetaTerms.push(resolvedEnglishTerm);
+      }
+      if (!hasArabic) {
+        cinemetaTerms.push(cleanQ);
+      }
+
+      const targetType = type || matchedMappedType;
+      const searchTypes = targetType === 'series' ? ['series'] : targetType === 'movie' ? ['movie'] : ['movie', 'series'];
+
+      for (const term of cinemetaTerms) {
+        for (const t of searchTypes) {
+          const res = await axios.get(
+            `https://v3-cinemeta.strem.io/catalog/${t}/top/search=${encodeURIComponent(term)}.json`, 
+            { timeout: 3500 }
+          ).catch(() => ({ data: { metas: [] } }));
+
+          for (const meta of (res.data?.metas || []).slice(0, 6)) {
+            if (meta.id && seenImdbIds.has(meta.id)) continue;
+            if (meta.id) seenImdbIds.add(meta.id);
+
+            results.push({
+              imdbId: meta.id,
+              title: meta.name,
+              type: t as 'movie' | 'series',
+              quality: '1080p Full HD',
+              language: 'Multi-Audio (Arabic Subs)',
+              subtitles: 'Arabic, English',
+              duration: meta.releaseInfo || (t === 'series' ? 'Series' : 'Movie'),
+              posterUrl: meta.poster || DEFAULT_MOVIE.posterUrl,
+              streamUrl: t === 'series'
+                ? `https://vidlink.pro/tv/${meta.id}/1/1?primaryColor=c5a059&autoplay=true`
+                : `https://vidlink.pro/movie/${meta.id}?primaryColor=c5a059&autoplay=true`,
+              overview: meta.description || '',
+            });
+          }
+        }
+        if (results.length >= 8) break;
       }
     } catch {}
 

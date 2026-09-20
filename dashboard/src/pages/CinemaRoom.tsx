@@ -16,7 +16,13 @@ import {
   Shield,
   ShieldCheck,
   Subtitles,
-  Download
+  Download,
+  Search,
+  Tv,
+  Link as LinkIcon,
+  List,
+  Compass,
+  Check
 } from 'lucide-react';
 import { MovieItem } from '../types';
 import { getMediaCatalog } from '../api';
@@ -50,10 +56,22 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
   const [watchersCount, setWatchersCount] = useState(1);
   const [channelId, setChannelId] = useState('default');
   const [guildId, setGuildId] = useState('');
+  const [userId, setUserId] = useState('');
   const [activeServer, setActiveServer] = useState<'server1' | 'server2' | 'server3' | 'server4' | 'server5' | 'server6'>('server1');
   const [adShieldEnabled, setAdShieldEnabled] = useState<boolean>(true);
   const [subtitlesList, setSubtitlesList] = useState<any[]>([]);
   const [isLoadingSubs, setIsLoadingSubs] = useState<boolean>(false);
+
+  // Universal Live Search & Sidebar Tabs State
+  const [sidebarTab, setSidebarTab] = useState<'search' | 'catalog' | 'direct'>('search');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CinemaMovie[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [selectedSeriesForEpisodes, setSelectedSeriesForEpisodes] = useState<CinemaMovie | null>(null);
+  const [customSeason, setCustomSeason] = useState<number>(1);
+  const [customEpisode, setCustomEpisode] = useState<number>(1);
+  const [directInputUrl, setDirectInputUrl] = useState('');
+  const [directInputTitle, setDirectInputTitle] = useState('');
 
   // Voice Access Lock State
   const [accessAllowed, setAccessAllowed] = useState<boolean | null>(null);
@@ -98,6 +116,27 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
       .catch(() => setSubtitlesList([]))
       .finally(() => setIsLoadingSubs(false));
   }, [currentMovie?.title, currentMovie?.streamUrl]);
+
+  // Live Universal Catalog Search Debouncer
+  useEffect(() => {
+    if (!searchQuery || searchQuery.trim().length === 0) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsSearching(true);
+      fetch(`/api/cinema/search?q=${encodeURIComponent(searchQuery.trim())}`)
+        .then(r => r.json())
+        .then(d => {
+          setSearchResults(d.results || []);
+        })
+        .catch(() => setSearchResults([]))
+        .finally(() => setIsSearching(false));
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const isEmbedStream = (url?: string) => {
     if (!url) return false;
@@ -368,24 +407,25 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
     sendRoomAction('seek', target);
   };
 
-  const handleSelectMovie = (movieItem: MovieItem) => {
+  const handleSelectMovie = (movieItem: MovieItem | CinemaMovie) => {
     lastUserInteraction.current = Date.now();
     const imdbMatch = movieItem.streamUrl.match(/video_id=([a-zA-Z0-9]+)/) ||
                       movieItem.streamUrl.match(/imdb=([a-zA-Z0-9]+)/);
 
     const cinemaMovie: CinemaMovie = {
       id: movieItem.id,
-      imdbId: imdbMatch ? imdbMatch[1] : undefined,
+      imdbId: ('imdbId' in movieItem && movieItem.imdbId) ? movieItem.imdbId : (imdbMatch ? imdbMatch[1] : undefined),
       title: movieItem.title,
       type: movieItem.type,
-      quality: movieItem.quality,
-      language: movieItem.language,
-      subtitles: movieItem.subtitles,
+      quality: movieItem.quality || '1080p Full HD',
+      language: movieItem.language || 'عربي / Multi-Audio',
+      subtitles: movieItem.subtitles || 'Arabic, English',
       season: movieItem.season || undefined,
       episode: movieItem.episode || undefined,
       duration: movieItem.duration || undefined,
       posterUrl: movieItem.posterUrl || 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600',
       streamUrl: movieItem.streamUrl,
+      overview: movieItem.overview || undefined,
     };
     setCurrentMovie(cinemaMovie);
     setIsPlaying(false);
@@ -396,8 +436,8 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
     sendRoomAction('setMovie', 0, cinemaMovie);
   };
 
-  // Switch between servers (VidSrc Pro, MultiEmbed, VidSrc Me, AutoEmbed, Smashy)
-  const handleSwitchServer = (serverType: 'server1' | 'server2' | 'server3' | 'server4' | 'server5') => {
+  // Switch between servers (VidLink VIP, AutoEmbed Pro, VidSrc CC VIP, 2Embed Global, MultiEmbed, Smashy)
+  const handleSwitchServer = (serverType: 'server1' | 'server2' | 'server3' | 'server4' | 'server5' | 'server6') => {
     if (!currentMovie) return;
     setActiveServer(serverType);
 
@@ -405,6 +445,48 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
     const updated = { ...currentMovie, streamUrl: newUrl };
     setCurrentMovie(updated);
     sendRoomAction('setMovie', 0, updated);
+  };
+
+  const handlePlaySeriesEpisode = (movie: CinemaMovie, s: number, e: number) => {
+    const id = getImdbId(movie);
+    const cleanTitle = movie.title.replace(/\s*\(الموسم.*?\)/g, '').replace(/\s*\(Season.*?\)/gi, '');
+    const updated: CinemaMovie = {
+      ...movie,
+      type: 'series',
+      season: s,
+      episode: e,
+      title: `${cleanTitle} (الموسم ${s} - الحلقة ${e})`,
+      streamUrl: `https://vidlink.pro/tv/${id}/${s}/${e}?primaryColor=c5a059&autoplay=true`
+    };
+    handleSelectMovie(updated);
+  };
+
+  const handlePlayDirectUrl = () => {
+    if (!directInputUrl || !directInputUrl.startsWith('http')) return;
+    let finalUrl = directInputUrl.trim();
+    let title = directInputTitle.trim() || 'بث مباشر خارجي';
+
+    if (finalUrl.includes('youtube.com/watch?v=')) {
+      const vid = finalUrl.split('v=')[1]?.split('&')[0];
+      if (vid) finalUrl = `https://www.youtube.com/embed/${vid}?autoplay=1`;
+    } else if (finalUrl.includes('youtu.be/')) {
+      const vid = finalUrl.split('youtu.be/')[1]?.split('?')[0];
+      if (vid) finalUrl = `https://www.youtube.com/embed/${vid}?autoplay=1`;
+    }
+
+    const directMovie: CinemaMovie = {
+      title,
+      type: 'movie',
+      quality: '1080p Full HD',
+      language: 'Direct Stream',
+      subtitles: 'Arabic / Embedded',
+      posterUrl: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=600',
+      streamUrl: finalUrl,
+      overview: `بث سينمائي مباشر من رابط خارجي (${title})`,
+    };
+    handleSelectMovie(directMovie);
+    setDirectInputUrl('');
+    setDirectInputTitle('');
   };
 
   const formatTime = (secs: number) => {
@@ -847,56 +929,385 @@ export const CinemaRoom: React.FC<CinemaRoomProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Right: Cinema Playlist & Info Sidebar */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: 'fit-content' }}>
-          <h3 style={{ fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <Film size={20} color="#D4AF37" />
-            <span>قائمة العرض السينمائي ({movies.length})</span>
-          </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '520px', overflowY: 'auto' }}>
-            {movies.map(item => {
-              const isCurrent = currentMovie?.title === item.title;
-              return (
-                <div 
-                  key={item.id}
-                  onClick={() => handleSelectMovie(item)}
-                  style={{
-                    padding: '12px',
-                    borderRadius: '8px',
-                    background: isCurrent ? 'rgba(212, 175, 55, 0.15)' : 'var(--bg-surface-elevated)',
-                    border: isCurrent ? '1px solid var(--gold-primary)' : '1px solid var(--border-subtle)',
-                    cursor: accessAllowed === false ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    transition: 'all 0.2s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <strong style={{ fontSize: '0.95rem', color: isCurrent ? '#FFF' : 'var(--text-primary)' }}>
-                      {item.title}
-                    </strong>
-                    <span className="badge-gold" style={{ fontSize: '0.65rem' }}>{item.quality}</span>
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {item.type === 'series' ? `الموسم ${item.season} الحلقة ${item.episode}` : item.duration}
-                  </div>
-                </div>
-              );
-            })}
+        {/* Right: Cinema Playlist & Live Universal Navigator Sidebar */}
+        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', height: 'fit-content' }}>
+          {/* Tabs header: Search | Catalog | Direct Link */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '6px',
+            background: 'var(--bg-surface-elevated)',
+            padding: '4px',
+            borderRadius: '10px',
+            border: '1px solid var(--border-subtle)'
+          }}>
+            <button
+              onClick={() => setSidebarTab('search')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '8px 4px',
+                fontSize: '0.8rem',
+                borderRadius: '7px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                background: sidebarTab === 'search' ? 'var(--gold-primary)' : 'transparent',
+                color: sidebarTab === 'search' ? '#000' : 'var(--text-secondary)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Search size={14} />
+              <span>بحث شامل</span>
+            </button>
+            <button
+              onClick={() => setSidebarTab('catalog')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '8px 4px',
+                fontSize: '0.8rem',
+                borderRadius: '7px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                background: sidebarTab === 'catalog' ? 'var(--gold-primary)' : 'transparent',
+                color: sidebarTab === 'catalog' ? '#000' : 'var(--text-secondary)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <Film size={14} />
+              <span>الكتالوج</span>
+            </button>
+            <button
+              onClick={() => setSidebarTab('direct')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                padding: '8px 4px',
+                fontSize: '0.8rem',
+                borderRadius: '7px',
+                fontWeight: 600,
+                border: 'none',
+                cursor: 'pointer',
+                background: sidebarTab === 'direct' ? 'var(--gold-primary)' : 'transparent',
+                color: sidebarTab === 'direct' ? '#000' : 'var(--text-secondary)',
+                transition: 'all 0.2s',
+              }}
+            >
+              <LinkIcon size={14} />
+              <span>رابط خارجي</span>
+            </button>
           </div>
+
+          {/* TAB 1: UNIVERSAL LIVE SEARCH */}
+          {sidebarTab === 'search' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="ابحث عن أي فيلم، مسلسل، أو أنمي..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 36px 10px 12px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-gold)',
+                    color: '#FFF',
+                    fontSize: '0.85rem',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <Search size={16} color="var(--gold-primary)" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+
+              {/* Quick Suggestion Tags */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {['ون بيس', 'هجوم العمالقة', 'بريكنج باد', 'المؤسس عثمان', 'ولاد رزق', 'صراع العروش'].map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => setSearchQuery(tag)}
+                    style={{
+                      background: 'rgba(212, 175, 55, 0.08)',
+                      border: '1px solid var(--border-subtle)',
+                      color: 'var(--gold-light)',
+                      borderRadius: '14px',
+                      padding: '3px 10px',
+                      fontSize: '0.72rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+
+              {/* Series Episode Selector Modal/Box if a series is selected */}
+              {selectedSeriesForEpisodes && (
+                <div style={{
+                  background: 'rgba(212, 175, 55, 0.08)',
+                  border: '1px solid var(--border-gold)',
+                  borderRadius: '10px',
+                  padding: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--gold-primary)' }}>
+                      📺 اختيار حلقة: {selectedSeriesForEpisodes.title}
+                    </span>
+                    <button
+                      onClick={() => setSelectedSeriesForEpisodes(null)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+                    >
+                      إلغاء ✕
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>الموسم</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={customSeason}
+                        onChange={e => setCustomSeason(Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{
+                          width: '100%',
+                          padding: '6px',
+                          borderRadius: '6px',
+                          background: 'var(--bg-surface-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                          color: '#FFF',
+                          textAlign: 'center',
+                          fontSize: '0.85rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '2px' }}>الحلقة</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={customEpisode}
+                        onChange={e => setCustomEpisode(Math.max(1, parseInt(e.target.value) || 1))}
+                        style={{
+                          width: '100%',
+                          padding: '6px',
+                          borderRadius: '6px',
+                          background: 'var(--bg-surface-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                          color: '#FFF',
+                          textAlign: 'center',
+                          fontSize: '0.85rem',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handlePlaySeriesEpisode(selectedSeriesForEpisodes, customSeason, customEpisode);
+                      setSelectedSeriesForEpisodes(null);
+                    }}
+                    className="btn-gold"
+                    style={{ padding: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <Play size={14} />
+                    <span>تشغيل الموسم {customSeason} الحلقة {customEpisode} بالصالة</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Live Search Results List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto' }}>
+                {isSearching ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    جاري البحث في قاعدة البيانات العالمية بدون إعلانات...
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map((item, idx) => {
+                    const isSeries = item.type === 'series';
+                    return (
+                      <div
+                        key={`${item.imdbId || item.id || idx}`}
+                        onClick={() => {
+                          if (isSeries) {
+                            setSelectedSeriesForEpisodes(item);
+                            setCustomSeason(item.season || 1);
+                            setCustomEpisode(item.episode || 1);
+                          } else {
+                            handleSelectMovie(item);
+                          }
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          background: 'var(--bg-surface-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                        }}
+                        className="hover-gold-border"
+                      >
+                        {item.posterUrl && (
+                          <img
+                            src={item.posterUrl}
+                            alt=""
+                            style={{ width: '42px', height: '60px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                          />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <strong style={{ fontSize: '0.85rem', color: '#FFF', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {item.title}
+                          </strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                            <span className="badge-gold" style={{ fontSize: '0.62rem', padding: '2px 6px' }}>
+                              {isSeries ? 'مسلسل / أنمي' : 'فيلم'}
+                            </span>
+                            {item.duration && (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                {item.duration}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ color: 'var(--gold-primary)', flexShrink: 0 }}>
+                          {isSeries ? <Tv size={16} /> : <Play size={16} />}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : searchQuery.trim().length > 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    لم يتم العثور على نتائج مباشرة. جرب البحث بالإنجليزية أو استخدم تبويب "رابط خارجي".
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                    🔍 اكتب اسم أي فيلم، مسلسل عالمي، أو أنمي بالعربي أو الإنجليزي لتشغيله مباشرة بدقة 1080p وترجمة عربية بدون أي إعلانات!
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: FEATURED CATALOG */}
+          {sidebarTab === 'catalog' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '480px', overflowY: 'auto' }}>
+              {movies.map(item => {
+                const isCurrent = currentMovie?.title === item.title;
+                return (
+                  <div 
+                    key={item.id}
+                    onClick={() => handleSelectMovie(item)}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '8px',
+                      background: isCurrent ? 'rgba(212, 175, 55, 0.15)' : 'var(--bg-surface-elevated)',
+                      border: isCurrent ? '1px solid var(--gold-primary)' : '1px solid var(--border-subtle)',
+                      cursor: accessAllowed === false ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ fontSize: '0.9rem', color: isCurrent ? '#FFF' : 'var(--text-primary)' }}>
+                        {item.title}
+                      </strong>
+                      <span className="badge-gold" style={{ fontSize: '0.65rem' }}>{item.quality}</span>
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {item.type === 'series' ? `الموسم ${item.season} الحلقة ${item.episode}` : item.duration}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* TAB 3: DIRECT STREAM / EMBED URL */}
+          {sidebarTab === 'direct' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                🔗 يمكنك وضع أي رابط مباشر من مواقع الأفلام العربية أو العالمية (أكوام، فاصل إعلاني، عرب سيد، وي سيما، يوتيوب، أو رابط فيديو MP4/M3U8):
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  عنوان العرض (اختياري)
+                </label>
+                <input
+                  type="text"
+                  placeholder="مثال: ون بيس الحلقة 1071"
+                  value={directInputTitle}
+                  onChange={e => setDirectInputTitle(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-subtle)',
+                    color: '#FFF',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  رابط البث أو الفيديو (URL)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://... (mp4, m3u8, embed, youtube)"
+                  value={directInputUrl}
+                  onChange={e => setDirectInputUrl(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    background: 'var(--bg-surface-elevated)',
+                    border: '1px solid var(--border-gold)',
+                    color: '#FFF',
+                    fontSize: '0.85rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+              <button
+                onClick={handlePlayDirectUrl}
+                disabled={!directInputUrl.trim().startsWith('http')}
+                className="btn-gold"
+                style={{ padding: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '4px' }}
+              >
+                <Play size={16} />
+                <span>تشغيل الرابط المباشر في السينما</span>
+              </button>
+            </div>
+          )}
 
           <div style={{
             background: 'rgba(212, 175, 55, 0.05)',
             border: '1px solid var(--border-subtle)',
             borderRadius: '8px',
-            padding: '14px',
-            fontSize: '0.8rem',
+            padding: '12px',
+            fontSize: '0.75rem',
             color: 'var(--text-secondary)',
             lineHeight: 1.6,
           }}>
-            🍿 <strong>مشاهدة ممتعة:</strong> اختر أي فيلم أو حلقة كاملة من القائمة للبدء الفوري، أو استخدم الأزرار العلوية للتبديل بين السيرفرات المتعددة في حال كان أحد السيرفرات بطيئاً.
+            🛡️ <strong>درع الحماية نشط:</strong> النوافذ المنبثقة والإعلانات محظورة كلياً على جميع المشاهدين في الروم لضمان تجربة مشاهدة سينمائية ملكية متزامنة 100%.
           </div>
         </div>
       </div>
